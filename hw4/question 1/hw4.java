@@ -1,58 +1,77 @@
-import java.awt.*;
-import java.awt.event.*;
-import java.util.ArrayList;
-import javax.swing.*;
 
-/**
- This program implements an animation that moves
- a car shape.
- */
-public class hw4
+public class hw4 implements Runnable
 {
-    private ArrayList<MoveableShape> shapes;
-    private ArrayList<ShapeIcon> icons;
-    private JFrame mainFrame;
-    private JPanel mainPanel;
-    private int numOfCars;
+	private BankAccount account;
+	private int REPETITIONS = 5;
+	private int DELAY = 10;
 
-    private static final int ICON_WIDTH = 400;
-    private static final int ICON_HEIGHT = 100;
-    private static final int CAR_WIDTH = 100;
+	public hw4(BankAccount b){
+		account = b;
+	}
+	public static void main(String[] args) {
+		BankAccount anAccount = new BankAccount(100);
+		hw4 t = new hw4(anAccount);
+		Thread one = new Thread(t);
+		Thread two = new Thread(t);
+		one.setName("Customer #1");
+		two.setName("Customer #2");
+		System.out.println("Account Balance: $" + anAccount.getBalance());
+		one.start();
+		two.start();
 
-    public hw4(int n){
-        numOfCars = n;
+	}
+	@Override
+	public void run()
+	{
+		try {
+			for (int i = 0; i < REPETITIONS; i++)
+			{
+				unsynchronizedDeposit(20);
+				unsynchronizedWithdraw(50);
+				Thread.sleep(DELAY);
+			}
+			System.out.println("\nSynchronized methods");
+			for (int i = 0; i < REPETITIONS; i++)
+			{
+				deposit(20);
+				withdraw(50);
+				Thread.sleep(DELAY);
+			}
 
-    }
-    private void run()
-    {
-        shapes = new ArrayList<>(numOfCars);
-        icons = new ArrayList<>(numOfCars);
-        for(int i = 0; i < numOfCars; i++){
-            MoveableShape aShape = new CarShape(i, (i+1)*10, CAR_WIDTH);
-            shapes.add(aShape);
-            icons.add(new ShapeIcon(aShape, ICON_WIDTH, ICON_HEIGHT));
-        }
-        prepareGUI();
-    }
-    private void prepareGUI(){
-        mainFrame = new JFrame();
-        mainPanel = new JPanel();
-        mainPanel.setLayout(new BoxLayout(mainPanel, BoxLayout.Y_AXIS));
-        mainFrame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        mainFrame.setSize(300,400);
-        for(int i = 0; i < numOfCars; i++){
-            MoveShape m = new MoveShape(shapes.get(i),(i+1)*50);
-            Thread aThread = new Thread(m);
-            aThread.start();
-            mainPanel.add(m);
-        }
+		}catch(InterruptedException e){}
+	}
+	private void  unsynchronizedDeposit(double amount){
+		account.deposit(amount);
+		System.out.println(Thread.currentThread().getName() +
+				" deposits $" + amount + ", new balance is $" + account.getBalance());
+	}
 
-        mainFrame.add(mainPanel);
-        mainFrame.setVisible(true);
-    }
-    public static void main(String[] args)
-    {
-    	hw4 tester = new hw4(3);
-    	tester.run();
-    }
+	private void unsynchronizedWithdraw(double amount){
+		if (account.getBalance() >=amount){
+			account.withdraw(amount);
+			System.out.println(Thread.currentThread().getName() +
+					" withdraws $" + amount + ", new balance is $" + account.getBalance());
+		}else{
+			System.out.println("Unable to complete the requested task for " + Thread.currentThread().getName()
+					+ " because there is not enough money in the account");
+		}
+	}
+
+	private synchronized void withdraw(double amount){
+		if (account.getBalance() >=amount){
+			account.withdraw(amount);
+			System.out.println(Thread.currentThread().getName() +
+					" withdraws $" + amount + ", new balance is " + account.getBalance());
+		}else{
+			System.out.println("Unable to complete the requested task for " + Thread.currentThread().getName()
+					+ " because there is not enough money in the account");
+		}
+	}
+
+	private synchronized void deposit(double amount){
+		account.deposit(amount);
+		System.out.println(Thread.currentThread().getName() +
+				" deposits $" + amount + ", new balance is $" + account.getBalance());
+	}
 }
+
